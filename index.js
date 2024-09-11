@@ -125,7 +125,7 @@ async function run() {
       }
     });
 
-    //--------------Main APIs here--------------
+    //--------------User APIs--------------
 
     // save a user data
     app.put("/user", async (req, res) => {
@@ -163,6 +163,43 @@ async function run() {
       });
       res.send(result);
     });
+
+    // get a user info by email from db
+    // app.get("/user/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   const result = await userCollection.findOne({ email });
+    //   res.send(result);
+    // });
+
+
+    // get all users data from db
+    app.get('/users', async (req, res) => {
+      const result = await userCollection.find().toArray()
+      res.send(result)
+    })
+
+    //update a user role
+    app.patch('/users/update/:email', async (req, res) => {
+      const email = req.params.email
+      const user = req.body
+      const query = { email }
+      const updateDoc = {
+        $set: { ...user, timestamp: Date.now() },
+      }
+      const result = await userCollection.updateOne(query, updateDoc)
+      res.send(result)
+    })
+
+
+
+
+
+
+
+
+
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
