@@ -93,6 +93,29 @@ async function run() {
     // database and collection
     const database = client.db("neighbourlyDB");
     const userCollection = database.collection("users");
+    const serviceCollection = database.collection("services");
+
+    // verify admin middleware
+    const verifyAdmin = async (req, res, next) => {
+      const user = req.user;
+      const query = { email: user?.email };
+      const result = await userCollection.findOne(query);
+      if (!result || result?.role !== "admin") {
+        return res.status(401).send({ message: "Unauthorized Access" });
+      }
+      next();
+    };
+
+    // verify worker middleware
+    const verifyWorker = async (req, res, next) => {
+      const user = req.user;
+      const query = { email: user?.email };
+      const result = await userCollection.findOne(query);
+      if (!result || result?.role !== "worker") {
+        return res.status(401).send({ message: "Unauthorized Access" });
+      }
+      next();
+    };
 
     // auth related api
     app.post("/jwt", async (req, res) => {
@@ -171,40 +194,39 @@ async function run() {
       res.send(result);
     });
 
-    // get all users 
-    app.get('/users', async (req, res) => {
-      const result = await userCollection.find().toArray()
-      res.send(result)
-    })
+    // get all users
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
 
     //update role user
-    app.patch('/users/update/:email', async (req, res) => {
-      const email = req.params.email
-      const user = req.body
-      const query = { email }
+    app.patch("/users/update/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const query = { email };
       const updateDoc = {
         $set: { ...user, timestamp: Date.now() },
-      }
-      const result = await userCollection.updateOne(query, updateDoc)
-      res.send(result)
-    })
+      };
+      const result = await userCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
 
     // delete user
-    app.delete('/users/:id', async (req, res) => {
+    app.delete("/users/:id", async (req, res) => {
       const id = req.params.id;
-      const result = await userCollection.deleteOne({ _id: new ObjectId(id) })
+      const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(result);
-    })
+    });
 
 
+    //--------------Service APIs--------------
 
-
-
-
-
-
-
-
+    app.post("/service", verifyToken, verifyWorker, async (req, res) =>{
+      const serviceData = req.body;
+      const result = await serviceCollection.insertOne(serviceData);
+      res.send(result);
+    });
 
 
 
