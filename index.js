@@ -187,7 +187,7 @@ async function run() {
       res.send(result);
     });
 
-    // get a user info by email for his role
+    // get a user info by email for his role and since
     app.get("/user/:email", async (req, res) => {
       const email = req.params.email;
       const result = await userCollection.findOne({ email });
@@ -222,11 +222,59 @@ async function run() {
 
     //--------------Service APIs--------------
 
+    // save a service
     app.post("/service", verifyToken, verifyWorker, async (req, res) =>{
       const serviceData = req.body;
       const result = await serviceCollection.insertOne(serviceData);
       res.send(result);
     });
+
+    // get all services
+    app.get("/services", async(req, res) => {
+      const category = req.query.category;
+      let query = {};
+      if(category && category !== "null"){
+        query = {category};
+      }
+      const result = await serviceCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // get a single Service
+    app.get("/service/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await serviceCollection.findOne(query);
+      res.send(result);
+    })
+
+    // get all service for worker who add
+    app.get("/my-listings/:email", verifyToken, verifyWorker, async (req, res) => {
+      const email = req.params.email;
+      let query = {"worker.email": email};
+      const result = await serviceCollection.find(query).toArray();
+      res.send(result);
+    })
+
+    // delete a service
+    app.delete("/service/:id", verifyToken, verifyWorker, async (req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await serviceCollection.deleteOne(query);
+      res.send(result)
+    })
+
+    // update a service
+    app.put("/service/update/:id", verifyToken, verifyWorker, async (req, res) => {
+      const id = req.params.id;
+      const serviceData = req.body;
+      const query = {_id: new ObjectId(id)};
+      const updateDoc = {
+        $set: serviceData,
+      };
+      const result = await serviceCollection.updateOne(query, updateDoc);
+      res.send(result);
+    })
 
 
 
