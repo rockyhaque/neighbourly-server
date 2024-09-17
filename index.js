@@ -94,6 +94,7 @@ async function run() {
     const database = client.db("neighbourlyDB");
     const userCollection = database.collection("users");
     const serviceCollection = database.collection("services");
+    const bookingCollection = database.collection("bookings");
 
     // verify admin middleware
     const verifyAdmin = async (req, res, next) => {
@@ -219,69 +220,132 @@ async function run() {
       res.send(result);
     });
 
-
     //--------------Service APIs--------------
 
     // save a service
-    app.post("/service", verifyToken, verifyWorker, async (req, res) =>{
+    app.post("/service", verifyToken, verifyWorker, async (req, res) => {
       const serviceData = req.body;
       const result = await serviceCollection.insertOne(serviceData);
       res.send(result);
     });
 
     // get all services
-    app.get("/services", async(req, res) => {
+    app.get("/services", async (req, res) => {
       const category = req.query.category;
       let query = {};
-      if(category && category !== "null"){
-        query = {category};
+      if (category && category !== "null") {
+        query = { category };
       }
       const result = await serviceCollection.find(query).toArray();
       res.send(result);
-    })
+    });
 
     // get a single Service
     app.get("/service/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await serviceCollection.findOne(query);
       res.send(result);
-    })
+    });
 
     // get all service for worker who add
-    app.get("/my-listings/:email", verifyToken, verifyWorker, async (req, res) => {
-      const email = req.params.email;
-      let query = {"worker.email": email};
-      const result = await serviceCollection.find(query).toArray();
-      res.send(result);
-    })
+    app.get(
+      "/my-listings/:email",
+      verifyToken,
+      verifyWorker,
+      async (req, res) => {
+        const email = req.params.email;
+        let query = { "worker.email": email };
+        const result = await serviceCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
 
     // delete a service
     app.delete("/service/:id", verifyToken, verifyWorker, async (req, res) => {
       const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
+      const query = { _id: new ObjectId(id) };
       const result = await serviceCollection.deleteOne(query);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     // update a service
-    app.put("/service/update/:id", verifyToken, verifyWorker, async (req, res) => {
-      const id = req.params.id;
-      const serviceData = req.body;
-      const query = {_id: new ObjectId(id)};
-      const updateDoc = {
-        $set: serviceData,
-      };
-      const result = await serviceCollection.updateOne(query, updateDoc);
-      res.send(result);
-    })
+    app.put(
+      "/service/update/:id",
+      verifyToken,
+      verifyWorker,
+      async (req, res) => {
+        const id = req.params.id;
+        const serviceData = req.body;
+        const query = { _id: new ObjectId(id) };
+        const updateDoc = {
+          $set: serviceData,
+        };
+        const result = await serviceCollection.updateOne(query, updateDoc);
+        res.send(result);
+      }
+    );
 
+
+    //--------------Booking APIs--------------
+
+
+    // save booked service for resident
+    app.post("/booking", async (req, res) => {
+      const bookingData = req.body;
+      // save service booking info
+      const result = await bookingCollection.insertOne(bookingData);
+
+      // send email to Resident
+      sendEmail(bookingData?.resident?.email, {
+        subject: "Booking Successfull",
+        message: `You've successfully booked a service through Neighbourly. Worker is on the way toward your address. Thank You 🤝`,
+      });
+
+      // send email to worker
+      sendEmail(bookingData?.worker?.email, {
+        subject: "Yay! You are booked!",
+        message: `Hurry Up! Get ready to go ${bookingData.resident.name}'s address. 🥳`,
+      });
+
+      res.send(result);
+    });
+
+
+    // get all booking for a resident
+    app.get("/my-bookings/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { "resident.email": email };
+      const result = await bookingCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // manage all booking for worker
+    app.get(
+      "/manage-bookings/:email",
+      verifyToken,
+      verifyWorker,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { "worker.email": email };
+        const result = await bookingCollection.find(query).toArray();
+        res.send(result);
+      }
+    );
+
+    // delete a booking service for 
+    app.delete("/booking/:id", verifyToken, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.deleteOne(query);
+      res.send(result);
+    });
 
 
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
