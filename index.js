@@ -311,7 +311,6 @@ async function run() {
       res.send(result);
     });
 
-
     // get all booking for a resident
     app.get("/my-bookings/:email", verifyToken, async (req, res) => {
       const email = req.params.email;
@@ -327,7 +326,7 @@ async function run() {
       verifyWorker,
       async (req, res) => {
         const email = req.params.email;
-        const query = { "worker.email": email };
+        const query = { "service.worker.email": email };
         const result = await bookingCollection.find(query).toArray();
         res.send(result);
       }
