@@ -143,7 +143,7 @@ async function run() {
             sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
           })
           .send({ success: true });
-        console.log("Logout successful");
+        // console.log("Logout successful");
       } catch (err) {
         res.status(500).send(err);
       }
@@ -286,9 +286,7 @@ async function run() {
       }
     );
 
-
     //--------------Booking APIs--------------
-
 
     // save booked service for resident
     app.post("/booking", async (req, res) => {
@@ -332,13 +330,38 @@ async function run() {
       }
     );
 
-    // delete a booking service for 
+    // delete a booking service for
     app.delete("/booking/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await bookingCollection.deleteOne(query);
       res.send(result);
     });
+
+    //--------------Booking Service APIs--------------
+
+    // update worker booking status
+    // app.patch("/service/status/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const status = req.body?.status;
+    //   // change worker availablity status
+    //   const query = { _id: new ObjectId(id) };
+    //   const updateDoc = {
+    //     $set: { booked: status },
+    //   };
+    //   const result = await serviceCollection.updateOne(query, updateDoc);
+    //   res.send(result);
+    // });
+    
+
+    // Get the worker status booked or not
+    // app.get("/booking/status/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const query = { _id: new ObjectId(id) };
+    //   const service = await bookingCollection.findOne(query);
+    //   console.log(service);
+    //   res.send(service);
+    // });
 
 
 
